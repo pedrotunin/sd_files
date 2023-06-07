@@ -26,7 +26,7 @@ class Server:
                 client_socket.send(res.encode())
 
                 client_socket.close()
-                
+        
         finally:
             self.socket.close()
 
