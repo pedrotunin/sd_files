@@ -13,18 +13,22 @@ class Server:
         self.socket.bind((self.host, self.port))
 
     def run(self):
-        self.socket.listen(5)
+        try:
+            self.socket.listen(5)
 
-        while True:
-            client_socket, address = self.socket.accept()
+            while True:
+                client_socket, address = self.socket.accept()
 
-            req = client_socket.recv(1024).decode()
+                req = client_socket.recv(1024).decode()
 
-            res = self.handle_request(req, address)
+                res = self.handle_request(req, address)
 
-            client_socket.send(res.encode())
+                client_socket.send(res.encode())
 
-            client_socket.close()
+                client_socket.close()
+                
+        finally:
+            self.socket.close()
 
     def handle_request(self, req: str, address) -> str:
         res = None
