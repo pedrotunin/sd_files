@@ -13,29 +13,27 @@ class Server:
         self.socket.bind((self.host, self.port))
 
     def run(self):
-        print("Servidor rodando em {}:{}".format(self.host, self.port))
-
         self.socket.listen(5)
-        print("Socket is listening")
 
         while True:
             client_socket, address = self.socket.accept()
-            print("Got a connection from {}".format(str(address)))
 
             req = client_socket.recv(1024).decode()
 
-            res = self.handle_request(req)
+            res = self.handle_request(req, address)
 
             client_socket.send(res.encode())
 
             client_socket.close()
 
-    def handle_request(self, req: str) -> str:
+    def handle_request(self, req: str, address) -> str:
         res = None
         req = json.loads(req)
 
         if req["action"] == "JOIN":
             res = self.handle_join(req["data"])
+        elif req["action"] == "SEARCH":
+            res = self.handle_search(req["data"], address)
 
         return json.dumps(res)
         
@@ -57,6 +55,17 @@ class Server:
 
         return {"message": "JOIN_OK"}
 
+    def handle_search(self, data: dict, address) -> dict:
+        file = data["file"]
+        host, port = address
+
+        print("Peer {}:{} solicitou arquivo {}".format(host, port, file))
+
+        if file in self.files_peers:
+            return {"message": "SEARCH_OK", "data": {"peers": self.files_peers[file]}}
+
+        return {"message": "SEARCH_OK", "data": {"peers": []}}
+
     def get_file_names(self, files: list) -> str:
         file_names = ""
 
@@ -69,7 +78,7 @@ if __name__ == "__main__":
     print("Insira o endereco IP do servidor: ")
     host = "127.0.0.1" #input()
     print("Insira a porta do servidor: ")
-    port = 1097 #int(input())
+    port = 1099 #int(input())
 
     server = Server(host, port)
     server.run()
