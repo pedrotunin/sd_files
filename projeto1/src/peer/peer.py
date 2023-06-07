@@ -1,5 +1,5 @@
 import os
-import sys
+import json
 import socket
 
 class Peer:
@@ -8,19 +8,58 @@ class Peer:
         self.port = port
         self.folder = folder
         self.files = self.list_files()
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = None
 
-    def join(self):
-        #TODO: implementar join no servidor
-        pass
+    def join(self, server_host, server_port):
+        self.create_socket()
+        self.socket.connect((server_host, server_port))
+
+        req = json.dumps({
+            "action": "JOIN",
+            "data": {
+                "host": self.host,
+                "port": self.port,
+                "files": self.files
+            }
+        })
+
+        self.socket.send(req.encode())
+
+        res = self.socket.recv(1024).decode()
+        res = json.loads(res)
+
+        if res["message"] == "JOIN_OK":
+            print("\nSou peer {}:{} com arquivos {}"
+                  .format(self.host, self.port, self.get_file_names(self.files))
+            )
+
+        self.socket.close()
 
     def update(self):
         #TODO: implementar update no servidor
         pass
 
-    def search(self, file: str) -> list:
-        #TODO: implementar busca por arquivos no servidor
-        pass
+    def search(self, file: str, server_host, server_port):
+        self.create_socket()
+        self.socket.connect((server_host, server_port))
+
+        req = json.dumps({
+            "action": "SEARCH",
+            "data": {
+                "file": file
+            }
+        })
+
+        self.socket.send(req.encode())
+
+        res = self.socket.recv(1024).decode()
+        res = json.loads(res)
+
+        print("\npeers com arquivo solicitado: {}"
+              .format(self.get_peers_info(res["data"]["peers"]))
+        )
+
+        self.socket.close()
 
     def download(self, host: str, port: int, file: str):
         #TODO: implementar requisição de download de arquivos para outros peers
@@ -38,6 +77,26 @@ class Peer:
             file_names.append(record.name)
 
         return list(dict.fromkeys(file_names))
+
+    def get_file_names(self, files: list) -> str:
+        file_names = ""
+
+        for file in files:
+            file_names += file + " "
+
+        return file_names.strip()
+    
+    def get_peers_info(self, peers: list) -> str:
+        peers_info = ""
+
+        for peer in peers:
+            peers_info += "{}:{} ".format(peer[0], peer[1])
+
+        return peers_info.strip()
+    
+    def create_socket(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((self.host, self.port))
 
 if __name__ == "__main__":
 
@@ -58,24 +117,24 @@ if __name__ == "__main__":
             option = input()
 
         if option == "1": # JOIN
-            print("Insira o endereco IP do peer: ")
-            host = "127.0.0.1" #input()
+            print("Insira o endereco IP do peer: ", end="")
+            host = input()
 
-            print("Insira a porta do peer: ")
-            port = 12345 #int(input())
+            print("Insira a porta do peer: ", end="")
+            port = int(input())
 
-            print("Insira a pasta onde estão os seus arquivos: ")
-            folder = "/home/tunin/sd_files/projeto1/peer_files/1" #input()
+            print("Insira a pasta onde estão os seus arquivos: ", end="")
+            folder = "/home/tunin/sd_files/projeto1/peer_files/" + input()
 
             peer = Peer(host, port, folder)
 
-            peer.join()
+            peer.join("127.0.0.1", 1099)
 
         elif option == "2": # SEARCH
             print("Insira o nome do arquivo que deseja procurar (com extensão): ")
-            file = "metallica.mp4" #input()
+            file = input()
             
-            peers = peer.search(file)
+            peer.search(file, "127.0.0.1", 1099)
 
         elif option == "3": # DOWNLOAD
             print("Insira o IP do peer que possui o arquivo: ")
