@@ -39,7 +39,7 @@ class Server:
         elif req["action"] == "SEARCH":
             res = self.handle_search(req["data"], address)
         elif req["action"] == "UPDATE":
-            res = self.handle_update(req["data"], address))
+            res = self.handle_update(req["data"], address)
 
         return json.dumps(res)
         
