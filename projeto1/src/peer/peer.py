@@ -1,6 +1,9 @@
 import os
 import json
 import socket
+import threading
+
+from concurrent.futures import ThreadPoolExecutor
 
 class Peer:
     def __init__(self, host, port, folder):
@@ -9,6 +12,33 @@ class Peer:
         self.folder = folder
         self.files = self.list_files()
         self.socket = None
+        self.create_socket()
+        
+        self.socket_listen = None
+        self.socket_listen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket_listen.bind((self.host, 23456))
+        
+        self.thread = threading.Thread(target=self.run, args=(1,), daemon=True)
+        self.thread.start()
+        
+    def run(self, name):
+        try:
+            self.socket_listen.listen(5)
+            
+            while True:
+                client_socket, address = self.socket_listen.accept()
+                host, port = address
+                
+                req = client_socket.recv(1024).decode()
+                
+                res = "Recebida mensagem do peer {}:{}".format(host, port)
+                
+                print(res)
+                
+                client_socket.close()
+            
+        finally:
+            self.socket_listen.close()
 
     def join(self, server_host, server_port):
         self.create_socket()
