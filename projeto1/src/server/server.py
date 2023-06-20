@@ -38,6 +38,8 @@ class Server:
             res = self.handle_join(req["data"])
         elif req["action"] == "SEARCH":
             res = self.handle_search(req["data"], address)
+        elif req["action"] == "UPDATE":
+            res = self.handle_update(req["data"], address))
 
         return json.dumps(res)
         
@@ -45,13 +47,8 @@ class Server:
         files = data["files"]
 
         for file in files:
-            if file not in self.files_peers:
-                self.files_peers[file] = []
-
-            peer = (data["host"], data["port"])
-
-            if peer not in self.files_peers[file]:
-                self.files_peers[file].append(peer)
+            self.create_file(file)
+            self.insert_peer(data["host"], data["port"], file)
 
         print("Peer {}:{} adicionado com arquivos {}"
               .format(data["host"], data["port"], self.get_file_names(files))
@@ -69,6 +66,25 @@ class Server:
             return {"message": "SEARCH_OK", "data": {"peers": self.files_peers[file]}}
 
         return {"message": "SEARCH_OK", "data": {"peers": []}}
+
+    def handle_update(self, data: dict, address) -> dict:
+        file = data["file"]
+        host, port = address
+    
+        self.create_file(file)
+        self.insert_peer(host, port, file)
+
+        return {"message": "UPDATE_OK"}
+
+    def create_file(self, file: str) -> None:
+        if file not in self.files_peers:
+            self.files_peers[file] = []
+
+    def insert_peer(self, host, port, file) -> None:
+        peer = (host, port)
+
+        if peer not in self.files_peers[file]:
+            self.files_peers[file].append(peer)
 
     def get_file_names(self, files: list) -> str:
         file_names = ""
