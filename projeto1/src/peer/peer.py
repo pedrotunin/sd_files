@@ -69,6 +69,14 @@ class Peer:
         #TODO: implementar upload de arquivos para outros peers
         pass
 
+    def check_file_exists(self, file: str) -> bool:
+        files = self.list_files()
+
+        if file in files:
+            return True
+        
+        return False
+
     def list_files(self) -> list:
         scan = os.scandir(self.folder)
         file_names = []
@@ -131,7 +139,7 @@ if __name__ == "__main__":
             peer.join("127.0.0.1", 1099)
 
         elif option == "2": # SEARCH
-            print("Insira o nome do arquivo que deseja procurar (com extensão): ")
+            print("Insira o nome do arquivo que deseja procurar (com extensão): ", end="")
             file = input()
             
             peer.search(file, "127.0.0.1", 1099)
