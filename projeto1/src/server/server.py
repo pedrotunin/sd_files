@@ -21,7 +21,7 @@ class Server:
 
                 req = client_socket.recv(1024).decode()
 
-                res = self.handle_request(req, address)
+                res = self.handle_request(req)
 
                 client_socket.send(res.encode())
 
@@ -30,16 +30,16 @@ class Server:
         finally:
             self.socket.close()
 
-    def handle_request(self, req: str, address) -> str:
+    def handle_request(self, req: str) -> str:
         res = None
         req = json.loads(req)
 
         if req["action"] == "JOIN":
             res = self.handle_join(req["data"])
         elif req["action"] == "SEARCH":
-            res = self.handle_search(req["data"], address)
+            res = self.handle_search(req["data"])
         elif req["action"] == "UPDATE":
-            res = self.handle_update(req["data"], address)
+            res = self.handle_update(req["data"])
 
         return json.dumps(res)
         
@@ -56,9 +56,10 @@ class Server:
 
         return {"message": "JOIN_OK"}
 
-    def handle_search(self, data: dict, address) -> dict:
+    def handle_search(self, data: dict) -> dict:
         file = data["file"]
-        host, port = address
+        host = data["host"]
+        port = data["port"]
 
         print("Peer {}:{} solicitou arquivo {}".format(host, port, file))
 
@@ -67,9 +68,10 @@ class Server:
 
         return {"message": "SEARCH_OK", "data": {"peers": []}}
 
-    def handle_update(self, data: dict, address) -> dict:
+    def handle_update(self, data: dict) -> dict:
         file = data["file"]
-        host, port = address
+        host = data["host"]
+        port = data["port"]
     
         self.create_file(file)
         self.insert_peer(host, port, file)
@@ -95,10 +97,10 @@ class Server:
         return file_names.strip()
 
 if __name__ == "__main__":
-    print("Insira o endereco IP do servidor: ")
-    host = "127.0.0.1" #input()
-    print("Insira a porta do servidor: ")
-    port = 1099 #int(input())
+    print("Insira o endereco IP do servidor: ", end="")
+    host = input()
+    print("Insira a porta do servidor: ", end="")
+    port = int(input())
 
     server = Server(host, port)
     server.run()
