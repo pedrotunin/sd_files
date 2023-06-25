@@ -4,6 +4,8 @@ import json
 import socket
 import threading
 
+SERVER_HOST = "127.0.0.1"
+SERVER_PORT = 1099
 PART_SIZE = 1024 * 16
 
 class Peer:
@@ -183,8 +185,8 @@ class Peer:
 
                 self.socket.send("Dados recebidos".encode())
 
-            print("\nArquivo {} baixado com sucesso na pasta {}\n".format(file_name, self.folder))
-            self.update(file_name, "127.0.0.1", 1099)
+            print("\nArquivo {} baixado com sucesso na pasta {}".format(file_name, self.folder))
+            self.update(file_name, SERVER_HOST, SERVER_PORT)
 
     def upload(self, file_path: str, number_of_parts: int, client_socket: socket.socket) -> None:
         
@@ -232,7 +234,6 @@ class Peer:
     
     def create_socket(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.socket.bind((self.host, self.port))
 
 if __name__ == "__main__":
 
@@ -260,17 +261,17 @@ if __name__ == "__main__":
             port = int(input())
 
             print("Insira a pasta onde estão os seus arquivos: ", end="")
-            folder = "/home/tunin/sd_files/projeto1/peer_files/" + input()
+            folder = input()
 
             peer = Peer(host, port, folder)
 
-            peer.join("127.0.0.1", 1099)
+            peer.join(SERVER_HOST, SERVER_PORT)
 
         elif option == "2": # SEARCH
             print("Insira o nome do arquivo que deseja procurar (com extensão): ", end="")
             file = input()
             
-            peer.search(file, "127.0.0.1", 1099)
+            peer.search(file, SERVER_HOST, SERVER_PORT)
 
         elif option == "3": # DOWNLOAD
             print("Insira o IP do peer que possui o arquivo: ", end="")
