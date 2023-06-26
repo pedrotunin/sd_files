@@ -6,12 +6,15 @@ class Server:
         self.host = host
         self.port = port
 
+        # dicionário que armazena os arquivos e os peers que os possuem, na seguinte estrutura:
         # { ( file_name , [ (host , port) , ... ] ) , ... }
         self.files_peers = dict()
 
+        # cria um socket TCP
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.host, self.port))
 
+    # função que fica escutando por novas conexões de peers
     def run(self):
         try:
             self.socket.listen(5)
@@ -30,6 +33,7 @@ class Server:
         finally:
             self.socket.close()
 
+    # função que direciona a requisição para a função correta de acordo com a ação
     def handle_request(self, req: str) -> str:
         res = None
         req = json.loads(req)
@@ -43,6 +47,7 @@ class Server:
 
         return json.dumps(res)
         
+    # função que adiciona um novo peer e seus arquivos ao servidor (JOIN)
     def handle_join(self, data: dict) -> dict:
         files = data["files"]
 
@@ -56,6 +61,7 @@ class Server:
 
         return {"message": "JOIN_OK"}
 
+    # função que retorna os peers que possuem o arquivo solicitado (SEARCH)
     def handle_search(self, data: dict) -> dict:
         file = data["file"]
         host = data["host"]
@@ -68,6 +74,7 @@ class Server:
 
         return {"message": "SEARCH_OK", "data": {"peers": []}}
 
+    # função que adiciona um novo arquivo a um peer (UPDATE)
     def handle_update(self, data: dict) -> dict:
         file = data["file"]
         host = data["host"]
@@ -78,16 +85,19 @@ class Server:
 
         return {"message": "UPDATE_OK"}
 
+    # função que cria um registro de um novo arquivo, caso ele não exista
     def create_file(self, file: str) -> None:
         if file not in self.files_peers:
             self.files_peers[file] = []
 
+    # função que insere um peer em um arquivo, caso ele não esteja inserido
     def insert_peer(self, host, port, file) -> None:
         peer = (host, port)
 
         if peer not in self.files_peers[file]:
             self.files_peers[file].append(peer)
 
+    # função que retorna uma string com os nomes dos arquivos
     def get_file_names(self, files: list) -> str:
         file_names = ""
 
@@ -102,5 +112,6 @@ if __name__ == "__main__":
     print("Insira a porta do servidor: ", end="")
     port = int(input())
 
+    # cria o servidor e o executa
     server = Server(host, port)
     server.run()
