@@ -3,12 +3,17 @@ import random
 
 from mensagem import Mensagem
 
+INIT = "1"
+PUT = "2"
+GET = "3"
+
 class Cliente:
     def __init__(self, servers: list) -> None:
-        self.servers = servers
+        self.servers = servers # lista dos servidores (ip, port)
         self.timestamps = dict() # timestamps das keys: [(key, timestamp)]
-        self.socket = None
+        self.socket = None # socket TCP
 
+    # Envia uma mensagem PUT para um servidor
     def put(self, key: str, value: str) -> None:
         server = self.choose_server()
 
@@ -20,12 +25,14 @@ class Cliente:
         mensagem_res = self.send_request(server, mensagem)
         data = mensagem_res.content["data"]
         
+        # Em caso de PUT_OK, atualiza o timestamp da key (o servidor escolhido foi o líder)
         if mensagem_res.type == "PUT_OK":
             print("\nPUT_OK key: {} value {} timestamp {} realizada no servidor {}:{}".format(
                 key, value, data["timestamp"], server[0], server[1]
             ))
             self.set_timestamp(key, data["timestamp"])
 
+        # Em caso de PUT_FOWARD, encaminha a mensagem para o líder
         elif mensagem_res.type == "PUT_FOWARD":
             leader = (data["ip_leader"], data["port_leader"])
 
@@ -38,6 +45,7 @@ class Cliente:
                 ))
                 self.set_timestamp(key, data["timestamp"])
 
+    # Envia uma mensagem GET para um servidor
     def get(self, key: str) -> None:
         server = self.choose_server()
 
@@ -49,27 +57,28 @@ class Cliente:
         mensagem_res = self.send_request(server, mensagem)
         data = mensagem_res.content["data"]
 
+        # Ao receber o GET_RESPONSE, imprime o valor da key
         if mensagem_res.type == "GET_RESPONSE":
             print("\nGET key: {} value: {} obtido do servidor {}:{}, meu timestamp {} e do servidor {}".format(
                 key, data["value"], server[0], server[1], self.get_timestamp(key), data["timestamp"]
             ))
-            self.set_timestamp(key, data["timestamp"])
 
+            # atualiza o timestamp da key se o valor não for TRY_OTHER_SERVER_OR_LATER
+            if data["value"] != "NULL" and data["value"] != "TRY_OTHER_SERVER_OR_LATER":
+                self.set_timestamp(key, data["timestamp"])
+
+    # Envia uma mensagem para um servidor e retorna a resposta
     def send_request(self, server: tuple, mensagem: Mensagem) -> Mensagem:
         self.create_socket()
-
         self.socket.connect(server)
 
         mensagem = mensagem.to_json()
-
         self.socket.send(mensagem.encode())
-
         res = self.socket.recv(1024).decode()
-        mensagem_res = Mensagem.from_json(res)
 
         self.socket.close()
 
-        return mensagem_res
+        return Mensagem.from_json(res)
 
     # retorna o timestamp da key
     def get_timestamp(self, key: str) -> int:
@@ -84,13 +93,12 @@ class Cliente:
     # escolhe um servidor aleatório
     def choose_server(self) -> tuple:
         return random.choice(self.servers)
-    
+
     # função que cria um socket TCP
-    def create_socket(self):
+    def create_socket(self) -> None:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 if __name__ == "__main__":
-    
     cliente = None
 
     while True:
@@ -105,21 +113,21 @@ if __name__ == "__main__":
             print("Opção inválida. Tente novamente.")
             option = input("Opção: ")
 
-        if option == "1": # INIT
+        # Inicialização do cliente
+        if option == INIT:
             servers = list()
-            # As portas default dos servidores são 10097, 10098 e 10099
 
-            #for i in range(1, 4):
-            #    print(f"Digite o IP do servidor {i}: ", end="")
-            #    ip = input()
-            #    print(f"Digite a porta do servidor {i}: ", end="")
-            #    port = int(input())
-            #    servers.append((ip, port))
+            for i in range(1, 4):
+                print(f"Digite o IP do servidor {i}: ", end="")
+                ip = input()
+                print(f"Digite a porta do servidor {i}: ", end="")
+                port = int(input())
+                servers.append((ip, port))
 
-            #cliente = Cliente(servers)
-            cliente = Cliente([("127.0.0.1", 10097), ("127.0.0.1", 10098), ("127.0.0.1", 10099)])
-    
-        elif option == "2": # PUT
+            cliente = Cliente(servers)
+
+        # Obtém key e value e envia uma mensagem PUT 
+        elif option == PUT:
             print("Digite a key: ", end="")
             key = input()
             print("Digite o value: ", end="")
@@ -127,7 +135,8 @@ if __name__ == "__main__":
 
             cliente.put(key, value)
 
-        elif option == "3": # GET
+        # Obtém key e envia uma mensagem GET
+        elif option == GET:
             print("Digite a key: ", end="")
             key = input()
 
